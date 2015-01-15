@@ -4,9 +4,9 @@
 
 using ::testing::Return;
 using ::testing::_;
-//using ::testing::Mock;
+using ::testing::Test;
 
-class mock : public Lapper {
+class mock {
 	public:
 		virtual ~mock(){}
 		MOCK_METHOD1(exAPI,int(int n));
@@ -18,17 +18,31 @@ class mock : public Lapper {
 
 };
 
-//mock mo;
-
 int get_exAPI(int a){
 	mock *mo=mock::getMock();
 	return mo->exAPI(a);
 }
 
-TEST(targettest, case1){
+class targettest : public ::testing::Test
+{
+	int (*saved)(int);
+
+	virtual void SetUp()
+	{
+		saved = exAPI;
+		exAPI = get_exAPI;
+	}
+
+	virtual void TearDown()
+	{
+		exAPI = saved;
+	}
+};
+
+
+TEST_F(targettest, case1){
 	mock *mo=mock::getMock();
-	Lapper la;
-	exAPI= get_exAPI;
+	Target ta;
 
 //	::testing::GMOCK_FLAG(catch_leaked_mocks) = true;
 //	::testing::Mock::AllowLeak(&mo);
@@ -36,8 +50,20 @@ TEST(targettest, case1){
 	EXPECT_CALL(*mo, exAPI(_))
 		.WillRepeatedly(Return(1));
 	
-	EXPECT_TRUE(la.Func(0));
+	EXPECT_TRUE(ta.Func(0));
 
 //	Mock::VerifyAndClear(mo);
 
+}
+
+TEST_F(targettest, case2){
+    mock *mo=mock::getMock();
+    Target ta;
+
+//    EXPECT_CALL(*mo, exAPI(_))
+//        .WillRepeatedly(Return(0));
+
+//  前回のActionが残っているので1がreturnされる
+
+    EXPECT_TRUE(ta.Func(0));
 }
